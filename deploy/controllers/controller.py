@@ -127,6 +127,7 @@ class Controller_squat(Controller):
         # print('[run] obs', self.obs)
         # print('[run] action', self.action)
         # print('[run] target_dof_pos', target_dof_pos)
+        target_dof_pos[[5,11]] = 0.
         print('[run] squat_cmd', self.squat_cmd)
         return target_dof_pos
 

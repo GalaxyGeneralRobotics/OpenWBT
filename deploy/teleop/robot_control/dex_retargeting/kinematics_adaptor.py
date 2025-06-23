@@ -7,6 +7,7 @@ from .robot_wrapper import RobotWrapper
 
 
 class KinematicAdaptor:
+
     def __init__(self, robot: RobotWrapper, target_joint_names: List[str]):
         self.robot = robot
         self.target_joint_names = target_joint_names
@@ -42,6 +43,7 @@ class KinematicAdaptor:
 
 
 class MimicJointKinematicAdaptor(KinematicAdaptor):
+
     def __init__(
         self,
         robot: RobotWrapper,
@@ -59,13 +61,11 @@ class MimicJointKinematicAdaptor(KinematicAdaptor):
         # Joint name check
         union_set = set(mimic_joint_names).intersection(set(target_joint_names))
         if len(union_set) > 0:
-            raise ValueError(
-                f"Mimic joint should not be one of the target joints.\n"
-                f"Mimic joints: {mimic_joint_names}.\n"
-                f"Target joints: {target_joint_names}\n"
-                f"You need to specify the target joint names explicitly in your retargeting config"
-                f" for robot with mimic joint constraints: {target_joint_names}"
-            )
+            raise ValueError(f"Mimic joint should not be one of the target joints.\n"
+                             f"Mimic joints: {mimic_joint_names}.\n"
+                             f"Target joints: {target_joint_names}\n"
+                             f"You need to specify the target joint names explicitly in your retargeting config"
+                             f" for robot with mimic joint constraints: {target_joint_names}")
 
         # Indices in the pinocchio
         self.idx_pin2source = np.array([robot.get_joint_index(name) for name in source_joint_names])
@@ -80,8 +80,7 @@ class MimicJointKinematicAdaptor(KinematicAdaptor):
         if not (len_mimic == len_source == len_mul == len_offset):
             raise ValueError(
                 f"Mimic joints setting dimension mismatch.\n"
-                f"Source joints: {len_source}, mimic joints: {len_mimic}, multiplier: {len_mul}, offset: {len_offset}"
-            )
+                f"Source joints: {len_source}, mimic joints: {len_mimic}, multiplier: {len_mul}, offset: {len_offset}")
         self.num_active_joints = len(robot.dof_joint_names) - len_mimic
 
         # Uniqueness check

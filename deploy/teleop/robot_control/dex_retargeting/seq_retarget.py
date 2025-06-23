@@ -10,6 +10,7 @@ from .optimizer_utils import LPFilter
 
 
 class SeqRetargeting:
+
     def __init__(
         self,
         optimizer: Optimizer,

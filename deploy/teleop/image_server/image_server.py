@@ -8,6 +8,7 @@ import pyrealsense2 as rs
 
 
 class RealSenseCamera(object):
+
     def __init__(self, img_shape, fps, serial_number=None, enable_depth=False) -> None:
         """
         img_shape: [height, width]
@@ -66,6 +67,7 @@ class RealSenseCamera(object):
 
 
 class OpenCVCamera():
+
     def __init__(self, device_id, img_shape, fps):
         """
         decive_id: /dev/video* or *
@@ -77,7 +79,7 @@ class OpenCVCamera():
         self.cap = cv2.VideoCapture(self.id, cv2.CAP_V4L2)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.img_shape[0])
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.img_shape[1])
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.img_shape[1])
         self.cap.set(cv2.CAP_PROP_FPS, self.fps)
 
         # Test if the camera can read frames
@@ -100,7 +102,8 @@ class OpenCVCamera():
 
 
 class ImageServer:
-    def __init__(self, config, port = 5555, Unit_Test = False):
+
+    def __init__(self, config, port=5555, Unit_Test=False):
         """
         config example1:
         {
@@ -139,16 +142,15 @@ class ImageServer:
         print(config)
         self.fps = config.get('fps', 30)
         self.head_camera_type = config.get('head_camera_type', 'opencv')
-        self.head_image_shape = config.get('head_camera_image_shape', [480, 640])      # (height, width)
+        self.head_image_shape = config.get('head_camera_image_shape', [480, 640])  # (height, width)
         self.head_camera_id_numbers = config.get('head_camera_id_numbers', [0])
 
         self.wrist_camera_type = config.get('wrist_camera_type', None)
-        self.wrist_image_shape = config.get('wrist_camera_image_shape', [480, 640])    # (height, width)
+        self.wrist_image_shape = config.get('wrist_camera_image_shape', [480, 640])  # (height, width)
         self.wrist_camera_id_numbers = config.get('wrist_camera_id_numbers', None)
 
         self.port = port
         self.Unit_Test = Unit_Test
-
 
         # Initialize head cameras
         self.head_cameras = []
@@ -172,7 +174,9 @@ class ImageServer:
                     self.wrist_cameras.append(camera)
             elif self.wrist_camera_type == 'realsense':
                 for serial_number in self.wrist_camera_id_numbers:
-                    camera = RealSenseCamera(img_shape=self.wrist_image_shape, fps=self.fps, serial_number=serial_number)
+                    camera = RealSenseCamera(img_shape=self.wrist_image_shape,
+                                             fps=self.fps,
+                                             serial_number=serial_number)
                     self.wrist_cameras.append(camera)
             else:
                 print(f"[Image Server] Unsupported wrist_camera_type: {self.wrist_camera_type}")
@@ -187,23 +191,29 @@ class ImageServer:
 
         for cam in self.head_cameras:
             if isinstance(cam, OpenCVCamera):
-                print(f"[Image Server] Head camera {cam.id} resolution: {cam.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)} x {cam.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
+                print(
+                    f"[Image Server] Head camera {cam.id} resolution: {cam.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)} x {cam.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}"
+                )
             elif isinstance(cam, RealSenseCamera):
-                print(f"[Image Server] Head camera {cam.serial_number} resolution: {cam.img_shape[0]} x {cam.img_shape[1]}")
+                print(
+                    f"[Image Server] Head camera {cam.serial_number} resolution: {cam.img_shape[0]} x {cam.img_shape[1]}"
+                )
             else:
                 print("[Image Server] Unknown camera type in head_cameras.")
 
         for cam in self.wrist_cameras:
             if isinstance(cam, OpenCVCamera):
-                print(f"[Image Server] Wrist camera {cam.id} resolution: {cam.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)} x {cam.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
+                print(
+                    f"[Image Server] Wrist camera {cam.id} resolution: {cam.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)} x {cam.cap.get(cv2.CAP_PROP_FRAME_WIDTH)}"
+                )
             elif isinstance(cam, RealSenseCamera):
-                print(f"[Image Server] Wrist camera {cam.serial_number} resolution: {cam.img_shape[0]} x {cam.img_shape[1]}")
+                print(
+                    f"[Image Server] Wrist camera {cam.serial_number} resolution: {cam.img_shape[0]} x {cam.img_shape[1]}"
+                )
             else:
                 print("[Image Server] Unknown camera type in wrist_cameras.")
 
         print("[Image Server] Image server has started, waiting for client connections...")
-
-
 
     def _init_performance_metrics(self):
         self.frame_count = 0  # Total frames sent
@@ -224,7 +234,9 @@ class ImageServer:
         if self.frame_count % 30 == 0:
             elapsed_time = current_time - self.start_time
             real_time_fps = len(self.frame_times) / self.time_window
-            print(f"[Image Server] Real-time FPS: {real_time_fps:.2f}, Total frames sent: {self.frame_count}, Elapsed time: {elapsed_time:.2f} sec")
+            print(
+                f"[Image Server] Real-time FPS: {real_time_fps:.2f}, Total frames sent: {self.frame_count}, Elapsed time: {elapsed_time:.2f} sec"
+            )
 
     def _close(self):
         for cam in self.head_cameras:
@@ -254,7 +266,7 @@ class ImageServer:
                 if len(head_frames) != len(self.head_cameras):
                     break
                 head_color = cv2.hconcat(head_frames)
-                
+
                 if self.wrist_cameras:
                     wrist_frames = []
                     for cam in self.wrist_cameras:
@@ -316,11 +328,10 @@ if __name__ == "__main__":
         # 'head_camera_image_shape': [480, 640],                            # Head camera resolution  [height, width]
         # 'head_camera_id_numbers': ["218622271739"],                       # realsense camera's serial number
 
-        #'wrist_camera_type': 'realsense', 
+        #'wrist_camera_type': 'realsense',
         #'wrist_camera_image_shape': [480, 640],                           # Wrist camera resolution  [height, width]
         #'wrist_camera_id_numbers': ["218622271789", "241222076627"],      # serial number (realsense)
     }
 
     server = ImageServer(config, Unit_Test=False)
     server.send_process()
-    

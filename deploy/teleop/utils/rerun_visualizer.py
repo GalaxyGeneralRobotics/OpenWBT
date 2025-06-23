@@ -6,8 +6,10 @@ import rerun as rr
 import rerun.blueprint as rrb
 from datetime import datetime
 
+
 class RerunEpisodeReader:
-    def __init__(self, task_dir = ".", json_file="data.json"):
+
+    def __init__(self, task_dir=".", json_file="data.json"):
         self.task_dir = task_dir
         self.json_file = json_file
 
@@ -32,17 +34,15 @@ class RerunEpisodeReader:
             audios = self._process_audio(item_data, 'audios', episode_dir)
 
             # Append the data in the item_data list
-            episode_data.append(
-                {
-                    'idx': item_data.get('idx', 0),
-                    'colors': colors,
-                    'depths': depths,
-                    'states': item_data.get('states', {}),
-                    'actions': item_data.get('actions', {}),
-                    'tactiles': item_data.get('tactiles', {}),
-                    'audios': audios,
-                }
-            )
+            episode_data.append({
+                'idx': item_data.get('idx', 0),
+                'colors': colors,
+                'depths': depths,
+                'states': item_data.get('states', {}),
+                'actions': item_data.get('actions', {}),
+                'tactiles': item_data.get('tactiles', {}),
+                'audios': audios,
+            })
 
         return episode_data
 
@@ -69,15 +69,17 @@ class RerunEpisodeReader:
                     pass  # Handle audio data if needed
         return audio_data
 
+
 class RerunLogger:
-    def __init__(self, prefix = "", IdxRangeBoundary = 30, memory_limit = None):
+
+    def __init__(self, prefix="", IdxRangeBoundary=30, memory_limit=None):
         self.prefix = prefix
         self.IdxRangeBoundary = IdxRangeBoundary
         rr.init(datetime.now().strftime("Runtime_%Y%m%d_%H%M%S"))
         if memory_limit:
-            rr.spawn(memory_limit = memory_limit, hide_welcome_screen = True)
+            rr.spawn(memory_limit=memory_limit, hide_welcome_screen=True)
         else:
-            rr.spawn(hide_welcome_screen = True)
+            rr.spawn(hide_welcome_screen=True)
 
         # Set up blueprint for live visualization
         if self.IdxRangeBoundary:
@@ -87,22 +89,19 @@ class RerunLogger:
         views = []
 
         data_plot_paths = [
-                           f"{self.prefix}left_arm", 
-                           f"{self.prefix}right_arm", 
-                           f"{self.prefix}left_hand", 
-                           f"{self.prefix}right_hand"
+            f"{self.prefix}left_arm", f"{self.prefix}right_arm", f"{self.prefix}left_hand", f"{self.prefix}right_hand"
         ]
         for plot_path in data_plot_paths:
             view = rrb.TimeSeriesView(
-                origin = plot_path,
+                origin=plot_path,
                 time_ranges=[
                     rrb.VisibleTimeRange(
                         "idx",
-                        start = rrb.TimeRangeBoundary.cursor_relative(seq = -self.IdxRangeBoundary),
-                        end = rrb.TimeRangeBoundary.cursor_relative(),
+                        start=rrb.TimeRangeBoundary.cursor_relative(seq=-self.IdxRangeBoundary),
+                        end=rrb.TimeRangeBoundary.cursor_relative(),
                     )
                 ],
-                plot_legend = rrb.PlotLegend(visible = True),
+                plot_legend=rrb.PlotLegend(visible=True),
             )
             views.append(view)
 
@@ -125,15 +124,15 @@ class RerunLogger:
         #     )
         #     views.append(view)
 
-        grid = rrb.Grid(contents = views,
-                        grid_columns=2,               
-                        column_shares=[1, 1],
-                        row_shares=[1, 1], 
+        grid = rrb.Grid(
+            contents=views,
+            grid_columns=2,
+            column_shares=[1, 1],
+            row_shares=[1, 1],
         )
         views.append(rr.blueprint.SelectionPanel(state=rrb.PanelState.Collapsed))
         views.append(rr.blueprint.TimePanel(state=rrb.PanelState.Collapsed))
         rr.send_blueprint(grid)
-
 
     def log_item_data(self, item_data: dict):
         rr.set_time_sequence("idx", item_data.get('idx', 0))
@@ -206,8 +205,7 @@ if __name__ == "__main__":
     else:
         print("rerun_testdata exits.")
 
-
-    episode_reader = RerunEpisodeReader(task_dir = unzip_file_output_dir)
+    episode_reader = RerunEpisodeReader(task_dir=unzip_file_output_dir)
     # TEST EXAMPLE 1 : OFFLINE DATA TEST
     user_input = input("Please enter the start signal (enter 'off' or 'on' to start the subsequent program):\n")
     if user_input.lower() == 'off':
@@ -221,12 +219,11 @@ if __name__ == "__main__":
     if user_input.lower() == 'on':
         episode_data8 = episode_reader.return_episode_data(8)
         print("Starting online visualization with fixed idx size...")
-        online_logger = RerunLogger(prefix="online/", IdxRangeBoundary = 60, memory_limit='50MB')
+        online_logger = RerunLogger(prefix="online/", IdxRangeBoundary=60, memory_limit='50MB')
         for item_data in episode_data8:
             online_logger.log_item_data(item_data)
-            time.sleep(0.033) # 30hz
+            time.sleep(0.033)  # 30hz
         print("Online visualization completed.")
-
 
     # # TEST DATA OF data_dir
     # data_dir = "./data"

@@ -7,27 +7,29 @@ import asyncio
 import cv2
 
 from multiprocessing import context
+
 Value = context._default_context.Value
 
 
 class TeleVision:
+
     def __init__(self, binocular, img_shape, img_shm_name, cert_file="./cert.pem", key_file="./key.pem", ngrok=False):
         self.binocular = binocular
         self.img_height = img_shape[0]
-        if binocular:   # 分割图像宽度为一半，以适应双目模式
-            self.img_width  = img_shape[1] // 2
+        if binocular:  # split the image width to half of the device witdh to adapt to the binocular mode
+            self.img_width = img_shape[1] // 2
         else:
-            self.img_width  = img_shape[1]
+            self.img_width = img_shape[1]
 
-        if ngrok:   # 网络代理连接
+        if ngrok:  # connecting the network agent
             self.vuer = Vuer(host='0.0.0.0', queries=dict(grid=False), queue_len=3)
-        else:   
+        else:
             self.vuer = Vuer(host='0.0.0.0', cert=cert_file, key=key_file, queries=dict(grid=False), queue_len=3)
 
         self.vuer.add_handler("HAND_MOVE")(self.on_hand_move)
-        self.vuer.add_handler("CAMERA_MOVE")(self.on_cam_move)  # 当 CAMERA_MOVE 发生时，on_cam_move方法会被调用
+        self.vuer.add_handler("CAMERA_MOVE")(self.on_cam_move)
 
-        existing_shm = shared_memory.SharedMemory(name=img_shm_name)    # 共享内存
+        existing_shm = shared_memory.SharedMemory(name=img_shm_name)
         self.img_array = np.ndarray(img_shape, dtype=np.uint8, buffer=existing_shm.buf)
 
         if binocular:
@@ -39,7 +41,7 @@ class TeleVision:
         self.right_hand_shared = Array('d', 16, lock=True)
         self.left_landmarks_shared = Array('d', 75, lock=True)
         self.right_landmarks_shared = Array('d', 75, lock=True)
-        
+
         self.head_matrix_shared = Array('d', 16, lock=True)
         self.aspect_shared = Value('d', 1.0, lock=True)
 
@@ -47,27 +49,26 @@ class TeleVision:
         self.process.daemon = True
         self.process.start()
 
-    
     def vuer_run(self):
         self.vuer.run()
 
-    async def on_cam_move(self, event, session, fps=60):    # 相机移动
+    async def on_cam_move(self, event, session, fps=60):
         try:
             self.head_matrix_shared[:] = event.value["camera"]["matrix"]
             self.aspect_shared.value = event.value['camera']['aspect']
         except:
             pass
 
-    async def on_hand_move(self, event, session, fps=60):   # 左右手及关键点
+    async def on_hand_move(self, event, session, fps=60):
         try:
             self.left_hand_shared[:] = event.value["leftHand"]
             self.right_hand_shared[:] = event.value["rightHand"]
             self.left_landmarks_shared[:] = np.array(event.value["leftLandmarks"]).flatten()
             self.right_landmarks_shared[:] = np.array(event.value["rightLandmarks"]).flatten()
-        except: 
+        except:
             pass
-    
-    async def main_image_binocular(self, session, fps=60):  # 双目模式
+
+    async def main_image_binocular(self, session, fps=60):
         session.upsert @ Hands(fps=fps, stream=True, key="hands", showLeft=False, showRight=False)
         while True:
             display_image = cv2.cvtColor(self.img_array, cv2.COLOR_BGR2RGB)
@@ -79,8 +80,8 @@ class TeleVision:
                         aspect=1.778,
                         height=1,
                         distanceToCamera=1,
-                        # The underlying rendering engine supported a layer binary bitmask for both objects and the camera. 
-                        # Below we set the two image planes, left and right, to layers=1 and layers=2. 
+                        # The underlying rendering engine supported a layer binary bitmask for both objects and the camera.
+                        # Below we set the two image planes, left and right, to layers=1 and layers=2.
                         # Note that these two masks are associated with left eye’s camera and the right eye’s camera.
                         layers=1,
                         format="jpeg",
@@ -105,7 +106,7 @@ class TeleVision:
             # 'jpeg' encoding should give you about 30fps with a 16ms wait in-between.
             await asyncio.sleep(0.016 * 2)
 
-    async def main_image_monocular(self, session, fps=60):  # 单目模式
+    async def main_image_monocular(self, session, fps=60):
         session.upsert @ Hands(fps=fps, stream=True, key="hands", showLeft=False, showRight=False)
         while True:
             display_image = cv2.cvtColor(self.img_array, cv2.COLOR_BGR2RGB)
@@ -130,17 +131,15 @@ class TeleVision:
     @property
     def left_hand(self):
         return np.array(self.left_hand_shared[:]).reshape(4, 4, order="F")
-        
-    
+
     @property
     def right_hand(self):
         return np.array(self.right_hand_shared[:]).reshape(4, 4, order="F")
-        
-    
+
     @property
     def left_landmarks(self):
         return np.array(self.left_landmarks_shared[:]).reshape(25, 3)
-    
+
     @property
     def right_landmarks(self):
         return np.array(self.right_landmarks_shared[:]).reshape(25, 3)
@@ -152,9 +151,10 @@ class TeleVision:
     @property
     def aspect(self):
         return float(self.aspect_shared.value)
-    
+
+
 if __name__ == '__main__':
-    import os 
+    import os
     import sys
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     img_shape = (480, 640 * 2, 3)
     img_shm = shared_memory.SharedMemory(create=True, size=np.prod(img_shape) * np.uint8().itemsize)
     img_array = np.ndarray(img_shape, dtype=np.uint8, buffer=img_shm.buf)
-    img_client = ImageClient(tv_img_shape = img_shape, tv_img_shm_name = img_shm.name)
+    img_client = ImageClient(tv_img_shape=img_shape, tv_img_shm_name=img_shm.name)
     image_receive_thread = threading.Thread(target=img_client.receive_process, daemon=True)
     image_receive_thread.start()
 

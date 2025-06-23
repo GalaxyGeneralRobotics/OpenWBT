@@ -4,21 +4,17 @@ from typing import Optional
 
 import numpy as np
 
-OPERATOR2MANO_RIGHT = np.array(
-    [
-        [0, 0, -1],
-        [-1, 0, 0],
-        [0, 1, 0],
-    ]
-)
+OPERATOR2MANO_RIGHT = np.array([
+    [0, 0, -1],
+    [-1, 0, 0],
+    [0, 1, 0],
+])
 
-OPERATOR2MANO_LEFT = np.array(
-    [
-        [0, 0, -1],
-        [1, 0, 0],
-        [0, -1, 0],
-    ]
-)
+OPERATOR2MANO_LEFT = np.array([
+    [0, 0, -1],
+    [1, 0, 0],
+    [0, -1, 0],
+])
 
 
 class RobotName(enum.Enum):
@@ -55,9 +51,8 @@ ROBOT_NAME_MAP = {
 ROBOT_NAMES = list(ROBOT_NAME_MAP.keys())
 
 
-def get_default_config_path(
-    robot_name: RobotName, retargeting_type: RetargetingType, hand_type: HandType
-) -> Optional[Path]:
+def get_default_config_path(robot_name: RobotName, retargeting_type: RetargetingType,
+                            hand_type: HandType) -> Optional[Path]:
     config_path = Path(__file__).parent / "configs"
     if retargeting_type is RetargetingType.position:
         config_path = config_path / "offline"

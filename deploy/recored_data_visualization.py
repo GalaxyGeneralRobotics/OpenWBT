@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tkinter import filedialog
 import tkinter as tk
 
+
 def load_all_pickles_from_dir(directory):
     data_list = []
     files = sorted(f for f in os.listdir(directory) if f.endswith('.pkl'))
@@ -14,6 +15,7 @@ def load_all_pickles_from_dir(directory):
             data = pickle.load(fp)
             data_list.append(data)
     return data_list
+
 
 def extract_field(data_list, field_path):
     extracted = []
@@ -27,6 +29,7 @@ def extract_field(data_list, field_path):
                 break
         extracted.append(d)
     return np.array(extracted)
+
 
 def normalize_array(arr):
     if arr.ndim == 1:
@@ -47,9 +50,10 @@ def normalize_array(arr):
             normed.append(normed_col)
         return np.stack(normed, axis=1)
 
+
 def plot_multiple_fields(data_list, field_paths, dims_per_field):
     T = len(data_list)
-    normalize = len(field_paths) > 1  # 多字段则归一化
+    normalize = len(field_paths) > 1  # need normalization when there are multiple fields
 
     plt.figure(figsize=(10, 6))
 
@@ -88,24 +92,25 @@ def flatten_keys(d, prefix=None):
             keys.append(path)
     return keys
 
+
 def main():
     # GUI choose directory
     # root = tk.Tk()
     # root.withdraw()
-    # folder = filedialog.askdirectory(title="选择包含pkl文件的数据文件夹")
-    folder = '/home/ubuntu/workspace/Gal_RL/save_real_data_test/g1_loco_squat_manual_grasp.yaml'
+    folder = filedialog.askdirectory(title="select a data folder that includes pkl files")
     data_list = load_all_pickles_from_dir(folder)
     print(f"Loaded {len(data_list)} records.")
 
-    # 自动获取字段路径
+    # get data paths
     sample = data_list[0]
     field_paths_all = flatten_keys(sample)
-    print("\n可视化字段选项：")
+    print("\nvisualized field names:")
     for idx, path in enumerate(field_paths_all):
         print(f"{idx}: {'/'.join(path)}")
 
     # 用户选择多个字段
-    choices = input("请输入要可视化的字段编号（可多个，用逗号分隔）：").strip().split(',')
+    choices = input("please input the indices of the fields to visualize (multiple indices are split by a single ','):"
+                   ).strip().split(',')
     selected_paths = []
     dims_per_field = []
 
@@ -121,16 +126,19 @@ def main():
             else:
                 data_array = np.stack(data_array)
                 D = data_array.shape[1]
-                dims_input = input(f"字段 {'/'.join(field_path)} 的维度为 {D}，请输入想画的维度（如0,1，留空表示全画）：").strip()
+                dims_input = input(
+                    f"the dimension of the field {'/'.join(field_path)} is {D}, please input the dimension to visualize (e.g., `0,1`) (empty input denotes visualizing all dimensions):"
+                ).strip()
                 dims = list(map(int, dims_input.split(','))) if dims_input else list(range(D))
                 dims_per_field.append(dims)
 
         except:
             breakpoint()
-            print(f"无效输入：{choice}")
+            print(f"invalid input: {choice}")
             return
 
     plot_multiple_fields(data_list, selected_paths, dims_per_field)
+
 
 if __name__ == "__main__":
     main()

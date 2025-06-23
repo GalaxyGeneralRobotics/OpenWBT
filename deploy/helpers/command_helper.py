@@ -18,6 +18,7 @@ def create_damping_cmd(cmd: Union[LowCmdGo, LowCmdHG]):
         cmd.motor_cmd[i].kd = 8
         cmd.motor_cmd[i].tau = 0
 
+
 def create_lower_damping_cmd(cmd: Union[LowCmdGo, LowCmdHG]):
     size = len(cmd.motor_cmd)
     for i in range(15):

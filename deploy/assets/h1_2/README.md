@@ -8,7 +8,7 @@ This package includes a streamlined robot description (URDF & MJCF) for the [Uni
   <img src="h1_2.png" width="500"/>
 </p>
 
-Unitree H1 have 51 DOFs:
+Unitree H1 has 51 DOFs:
 
 ```text
 root [⚓] => /pelvis/

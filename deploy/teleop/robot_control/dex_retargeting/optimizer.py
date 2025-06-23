@@ -76,8 +76,7 @@ class Optimizer:
         """
         if len(fixed_qpos) != len(self.idx_pin2fixed):
             raise ValueError(
-                f"Optimizer has {len(self.idx_pin2fixed)} joints but non_target_qpos {fixed_qpos} is given"
-            )
+                f"Optimizer has {len(self.idx_pin2fixed)} joints but non_target_qpos {fixed_qpos} is given")
         objective_fn = self.get_objective_function(ref_value, fixed_qpos, np.array(last_qpos).astype(np.float32))
 
         self.opt.set_min_objective(objective_fn)
@@ -202,8 +201,7 @@ class VectorOptimizer(Optimizer):
         # For one link used in multiple vectors, e.g. hand palm, we do not want to compute it multiple times
         self.computed_link_names = list(set(target_origin_link_names).union(set(target_task_link_names)))
         self.origin_link_indices = torch.tensor(
-            [self.computed_link_names.index(name) for name in target_origin_link_names]
-        )
+            [self.computed_link_names.index(name) for name in target_origin_link_names])
         self.task_link_indices = torch.tensor([self.computed_link_names.index(name) for name in target_task_link_names])
 
         # Cache link indices that will involve in kinematics computation
@@ -315,10 +313,8 @@ class DexPilotOptimizer(Optimizer):
         scaling=1.0,
     ):
         if len(finger_tip_link_names) < 2 or len(finger_tip_link_names) > 5:
-            raise ValueError(
-                f"DexPilot optimizer can only be applied to hands with 2 to 5 fingers, but got "
-                f"{len(finger_tip_link_names)} fingers."
-            )
+            raise ValueError(f"DexPilot optimizer can only be applied to hands with 2 to 5 fingers, but got "
+                             f"{len(finger_tip_link_names)} fingers.")
         self.num_fingers = len(finger_tip_link_names)
 
         origin_link_index, task_link_index = self.generate_link_indices(self.num_fingers)
@@ -346,8 +342,7 @@ class DexPilotOptimizer(Optimizer):
         # For one link used in multiple vectors, e.g. hand palm, we do not want to compute it multiple times
         self.computed_link_names = list(set(target_origin_link_names).union(set(target_task_link_names)))
         self.origin_link_indices = torch.tensor(
-            [self.computed_link_names.index(name) for name in target_origin_link_names]
-        )
+            [self.computed_link_names.index(name) for name in target_origin_link_names])
         self.task_link_indices = torch.tensor([self.computed_link_names.index(name) for name in target_task_link_names])
 
         # Sanity check and cache link indices
@@ -357,8 +352,7 @@ class DexPilotOptimizer(Optimizer):
 
         # DexPilot cache
         self.projected, self.s2_project_index_origin, self.s2_project_index_task, self.projected_dist = (
-            self.set_dexpilot_cache(self.num_fingers, eta1, eta2)
-        )
+            self.set_dexpilot_cache(self.num_fingers, eta1, eta2))
 
     @staticmethod
     def generate_link_indices(num_fingers):
@@ -418,12 +412,10 @@ class DexPilotOptimizer(Optimizer):
         target_vec_dist = np.linalg.norm(target_vector[:len_proj], axis=1)
         self.projected[:len_s1][target_vec_dist[0:len_s1] < self.project_dist] = True
         self.projected[:len_s1][target_vec_dist[0:len_s1] > self.escape_dist] = False
-        self.projected[len_s1:len_proj] = np.logical_and(
-            self.projected[:len_s1][self.s2_project_index_origin], self.projected[:len_s1][self.s2_project_index_task]
-        )
-        self.projected[len_s1:len_proj] = np.logical_and(
-            self.projected[len_s1:len_proj], target_vec_dist[len_s1:len_proj] <= 0.03
-        )
+        self.projected[len_s1:len_proj] = np.logical_and(self.projected[:len_s1][self.s2_project_index_origin],
+                                                         self.projected[:len_s1][self.s2_project_index_task])
+        self.projected[len_s1:len_proj] = np.logical_and(self.projected[len_s1:len_proj],
+                                                         target_vec_dist[len_s1:len_proj] <= 0.03)
 
         # Update weight vector
         normal_weight = np.ones(len_proj, dtype=np.float32) * 1
@@ -433,8 +425,7 @@ class DexPilotOptimizer(Optimizer):
         # We change the weight to 10 instead of 1 here, for vector originate from wrist to fingertips
         # This ensures better intuitive mapping due wrong pose detection
         weight = torch.from_numpy(
-            np.concatenate([weight, np.ones(self.num_fingers, dtype=np.float32) * len_proj + self.num_fingers])
-        )
+            np.concatenate([weight, np.ones(self.num_fingers, dtype=np.float32) * len_proj + self.num_fingers]))
 
         # Compute reference distance vector
         normal_vec = target_vector * self.scaling  # (10, 3)
@@ -470,9 +461,8 @@ class DexPilotOptimizer(Optimizer):
             # Loss term for kinematics retargeting based on 3D position error
             # Different from the original DexPilot, we use huber loss here instead of the squared dist
             vec_dist = torch.norm(robot_vec - torch_target_vec, dim=1, keepdim=False)
-            huber_distance = (
-                self.huber_loss(vec_dist, torch.zeros_like(vec_dist)) * weight / (robot_vec.shape[0])
-            ).sum()
+            huber_distance = (self.huber_loss(vec_dist, torch.zeros_like(vec_dist)) * weight /
+                              (robot_vec.shape[0])).sum()
             huber_distance = huber_distance.sum()
             result = huber_distance.cpu().detach().item()
 

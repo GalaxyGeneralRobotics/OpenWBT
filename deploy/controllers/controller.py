@@ -26,7 +26,7 @@ from unitree_sdk2py.utils.crc import CRC
 
 kf = IMUKF()
 ekf = IMUEKF()
-esekf = ESEKF(dt=1./50.)
+esekf = ESEKF(dt=1. / 50.)
 
 torch.set_printoptions(precision=3)
 np.set_printoptions(precision=3)
@@ -40,7 +40,9 @@ usb_right.start_receiving()
 usb_left.register_callback(usb_left.left_callback)
 usb_right.register_callback(usb_right.right_callback)
 
+
 class Controller:
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
 
@@ -59,10 +61,13 @@ class Controller:
 
         self.counter = 0
         self.transition_count = 0
+
     def set_transition_count(self):
         self.transition_count = self.config.transition_time
 
+
 class Controller_loco(Controller):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -86,16 +91,13 @@ class Controller_loco(Controller):
         # breakpoint()
         self.loco_low_level_policy.gait_planner.update_gait_phase(self.stance_command)
         self.obs, self.action, target_dof_pos[self.config.action_idx] = self.loco_low_level_policy.inference(
-            self.loco_cmd,
-            gravity_orientation,
-            omega,
-            qj_obs[self.config.dof_idx],
-            dqj_obs[self.config.dof_idx])
+            self.loco_cmd, gravity_orientation, omega, qj_obs[self.config.dof_idx], dqj_obs[self.config.dof_idx])
         print('[run] loco_cmd', self.loco_cmd)
         return target_dof_pos
 
 
 class Controller_squat(Controller):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -119,11 +121,7 @@ class Controller_squat(Controller):
     def run(self, cmd_raw, gravity_orientation, omega, qj_obs, dqj_obs, target_dof_pos):
         self.compute_squat_cmd(cmd_raw)
         self.obs, self.action, target_dof_pos[self.config.action_idx] = self.squat_low_level_policy.inference(
-            self.squat_cmd,
-            gravity_orientation,
-            omega,
-            qj_obs[self.config.dof_idx],
-            dqj_obs[self.config.dof_idx])
+            self.squat_cmd, gravity_orientation, omega, qj_obs[self.config.dof_idx], dqj_obs[self.config.dof_idx])
         # print('[run] obs', self.obs)
         # print('[run] action', self.action)
         # print('[run] target_dof_pos', target_dof_pos)
@@ -131,7 +129,9 @@ class Controller_squat(Controller):
         print('[run] squat_cmd', self.squat_cmd)
         return target_dof_pos
 
+
 class Runner:
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         self.default_controller = Controller(config, args)
@@ -152,11 +152,13 @@ class Runner:
 
         self.transfer_to_loco = False
         self.transfer_to_squat = False
+
     def locoable(self):
         return self.squat_controller.squat_cmd[0] > 0.72 and self.squat_controller.squat_cmd[1] < 0.05
 
     def stopable(self):
-        return abs(self.loco_controller.loco_cmd[0]) < 0.1  and self.loco_controller.loco_cmd[1] < 0.1 and self.loco_controller.loco_cmd[2] < 0.1
+        return abs(self.loco_controller.loco_cmd[0]
+                  ) < 0.1 and self.loco_controller.loco_cmd[1] < 0.1 and self.loco_controller.loco_cmd[2] < 0.1
 
     def post_squat(self):
         if self.locoable():
@@ -181,13 +183,13 @@ class Runner:
             gravity_orientation = kf.update(gravity_orientation)
             cmd_raw = None
             target_dof_pos = self.target_dof_pos.copy()
-            other_policy_target_dof_pos = self.squat_controller.run(
-                cmd_raw, gravity_orientation,
-                self.ang_vel, self.qj, self.dqj,
-                target_dof_pos)
+            other_policy_target_dof_pos = self.squat_controller.run(cmd_raw, gravity_orientation, self.ang_vel, self.qj,
+                                                                    self.dqj, target_dof_pos)
             alpha = self.loco_controller.transition_count / self.loco_controller.config.transition_time
             self.target_dof_pos = other_policy_target_dof_pos.copy()
-            self.target_dof_pos[self.config.action_hl_idx] = (alpha * self.loco_controller.last_policy_target_dof_pos + (1 - alpha) * self.loco_controller.config.default_angles.copy())[self.config.action_hl_idx]
+            self.target_dof_pos[self.config.action_hl_idx] = (
+                alpha * self.loco_controller.last_policy_target_dof_pos +
+                (1 - alpha) * self.loco_controller.config.default_angles.copy())[self.config.action_hl_idx]
             self.loco_controller.transition_count -= 1
             return True
             # print('transition_loco')
@@ -200,10 +202,8 @@ class Runner:
             gravity_orientation = kf.update(gravity_orientation)
             cmd_raw = None
             target_dof_pos = self.target_dof_pos.copy()
-            other_policy_target_dof_pos = self.loco_controller.run(
-                cmd_raw, gravity_orientation,
-                self.ang_vel, self.qj, self.dqj,
-                target_dof_pos)
+            other_policy_target_dof_pos = self.loco_controller.run(cmd_raw, gravity_orientation, self.ang_vel, self.qj,
+                                                                   self.dqj, target_dof_pos)
             alpha = self.squat_controller.transition_count / self.squat_controller.config.transition_time
             self.target_dof_pos = alpha * other_policy_target_dof_pos + (1 - alpha) * self.target_dof_pos
             self.squat_controller.transition_count -= 1
@@ -211,7 +211,9 @@ class Runner:
             # print('transition_squat')
         return False
 
+
 class Runner_online(Runner):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -246,7 +248,7 @@ class Runner_online(Runner):
         elif config.msg_type == "go":
             init_cmd_go(self.low_cmd, weak_motor=self.config.weak_motor)
 
-    def LowStateHgHandler(self): # , msg: LowStateHG
+    def LowStateHgHandler(self):  # , msg: LowStateHG
         # self.low_state = msg
         # self.low_state_timestamp = time.time()
         # self.mode_machine_ = self.low_state.mode_machine
@@ -254,7 +256,7 @@ class Runner_online(Runner):
         self.lowcmd_publisher_.Init()
 
         self.lowstate_subscriber = ChannelSubscriber(self.config.lowstate_topic, LowStateHG)
-        self.lowstate_subscriber.Init() # self.LowStateHgHandler, 10
+        self.lowstate_subscriber.Init()  # self.LowStateHgHandler, 10
         while True:
             msg = self.lowstate_subscriber.Read()
             self.low_state = msg
@@ -263,13 +265,14 @@ class Runner_online(Runner):
             time.sleep(0.001)
         # # pass
 
-
     def wait_for_low_state(self):
         while self.low_state.tick == 0:
             time.sleep(self.config.control_dt)
         print("Successfully connected to the robot.")
 
+
 class Runner_online_real(Runner_online):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -299,7 +302,8 @@ class Runner_online_real(Runner_online):
                     "ang_vel": self.ang_vel,  # np.float32, shape = (3,)
                 },
                 "squat_cmd": self.squat_controller.squat_cmd if hasattr(self.config, "squat_config") else -1,
-                "loco_cmd": self.loco_controller.loco_cmd if hasattr(self.config, 'loco_config') else -1,  # np.float32, shape = (3,)
+                "loco_cmd": self.loco_controller.loco_cmd
+                            if hasattr(self.config, 'loco_config') else -1,  # np.float32, shape = (3,)
                 "target_dof_pos": self.target_dof_pos,  # np.float32, shape = (num_actions,)
                 "tau": self.tau_record,  # np.float32, shape = (num_actions,)
             }
@@ -307,7 +311,7 @@ class Runner_online_real(Runner_online):
             time.sleep(0.02)
 
     def send_cmd(self, cmd: Union[LowCmdGo, LowCmdHG]):
-        if abs(self.tau_record).max() > 100: #
+        if abs(self.tau_record).max() > 100:  #
             print("large tau: ", np.arange(29)[abs(self.tau_record) > 100])
             create_damping_cmd(self.low_cmd)
             cmd = self.low_cmd
@@ -363,7 +367,6 @@ class Runner_online_real(Runner_online):
             self.tau_record[motor_idx] = (target_pos[j] - self.low_state.motor_state[j].q) * controller.kps[j] - \
                                          self.low_state.motor_state[j].dq * controller.kds[j]
 
-
     # @ExecutionTime('refresh_prop')
     def refresh_prop(self):
         # Get the current joint position and velocity
@@ -380,14 +383,13 @@ class Runner_online_real(Runner_online):
             # imu data needs to be transformed to the pelvis frame
             waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
             waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
-            self.quat, self.ang_vel = transform_imu_data(waist_yaw=waist_yaw,
-                                                         waist_yaw_omega=waist_yaw_omega,
-                                                         imu_quat=self.quat,
-                                                         imu_omega=self.ang_vel)  # NOTE(axis) only for h1 and h1_2 imu is on the torso ??
+            self.quat, self.ang_vel = transform_imu_data(
+                waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=self.quat,
+                imu_omega=self.ang_vel)  # NOTE(axis) only for h1 and h1_2 imu is on the torso ??
 
     def run_loco(self, debug=True, manual=True):
         self.refresh_prop()
-        
+
         gravity_orientation = get_gravity_orientation(self.quat)
         gravity_orientation = kf.update(gravity_orientation)
         omega = self.ang_vel.copy()
@@ -404,13 +406,8 @@ class Runner_online_real(Runner_online):
             cmd_raw = None
 
         if not self.transition_loco():
-            self.target_dof_pos = self.loco_controller.run(
-                cmd_raw,
-                gravity_orientation,
-                omega,
-                qj_obs,
-                dqj_obs,
-                target_dof_pos)
+            self.target_dof_pos = self.loco_controller.run(cmd_raw, gravity_orientation, omega, qj_obs, dqj_obs,
+                                                           target_dof_pos)
 
         self.pd_control(self.loco_controller, self.target_dof_pos)
         if usb_right.damping_signal:
@@ -418,7 +415,6 @@ class Runner_online_real(Runner_online):
         # send the command
         if debug:
             create_damping_cmd(self.low_cmd)
-
 
         current_control_timestamp = time.time()
         time_until_next_step = self.config.control_dt - (current_control_timestamp - self.last_control_timestamp)
@@ -435,7 +431,7 @@ class Runner_online_real(Runner_online):
 
     def run_squat(self, debug=True, manual=True):
         self.refresh_prop()
-        
+
         gravity_orientation = get_gravity_orientation(self.quat)
         gravity_orientation = kf.update(gravity_orientation)
         omega = self.ang_vel.copy()
@@ -445,18 +441,13 @@ class Runner_online_real(Runner_online):
 
         if manual:
             cmd_raw = self.squat_controller.config.cmd_debug.copy()
-            cmd_raw[0] = usb_left.lx    # height
+            cmd_raw[0] = usb_left.lx  # height
             cmd_raw[1] = usb_right.rx
         else:
             cmd_raw = None
 
-        self.target_dof_pos = self.squat_controller.run(
-            cmd_raw,
-            gravity_orientation,
-            omega,
-            qj_obs,
-            dqj_obs,
-            target_dof_pos)
+        self.target_dof_pos = self.squat_controller.run(cmd_raw, gravity_orientation, omega, qj_obs, dqj_obs,
+                                                        target_dof_pos)
 
         self.transition_squat()
         self.pd_control(self.squat_controller, self.target_dof_pos)
@@ -465,7 +456,6 @@ class Runner_online_real(Runner_online):
         # send the command
         if debug:
             create_damping_cmd(self.low_cmd)
-
 
         current_control_timestamp = time.time()
         time_until_next_step = self.config.control_dt - (current_control_timestamp - self.last_control_timestamp)
@@ -479,10 +469,13 @@ class Runner_online_real(Runner_online):
         self.counter += 1
         self.post_squat()
 
+
 from enum import IntEnum
 from multiprocessing import Process, shared_memory, Array, Lock
-from unitree_sdk2py.idl.unitree_hg.msg.dds_ import HandCmd_, HandState_                               # idl
+from unitree_sdk2py.idl.unitree_hg.msg.dds_ import HandCmd_, HandState_  # idl
 from unitree_sdk2py.idl.default import unitree_hg_msg_dds__HandCmd_
+
+
 class Dex3_1_Left_JointIndex(IntEnum):
     kLeftHandThumb0 = 0
     kLeftHandThumb1 = 1
@@ -491,6 +484,7 @@ class Dex3_1_Left_JointIndex(IntEnum):
     kLeftHandMiddle1 = 4
     kLeftHandIndex0 = 5
     kLeftHandIndex1 = 6
+
 
 class Dex3_1_Right_JointIndex(IntEnum):
     kRightHandThumb0 = 0
@@ -501,13 +495,17 @@ class Dex3_1_Right_JointIndex(IntEnum):
     kRightHandMiddle0 = 5
     kRightHandMiddle1 = 6
 
-unitree_tip_indices = [4, 9, 14] # [thumb, index, middle] in OpenXR
+
+unitree_tip_indices = [4, 9, 14]  # [thumb, index, middle] in OpenXR
 Dex3_Num_Motors = 7
 kTopicDex3LeftCommand = "rt/dex3/left/cmd"
 kTopicDex3RightCommand = "rt/dex3/right/cmd"
 kTopicDex3LeftState = "rt/dex3/left/state"
 kTopicDex3RightState = "rt/dex3/right/state"
+
+
 class Runner_online_real_dexhand(Runner_online_real):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -515,7 +513,7 @@ class Runner_online_real_dexhand(Runner_online_real):
         # Shared Arrays for hand states
         self.left_hand_state_array = Array('d', Dex3_Num_Motors, lock=True)
         self.right_hand_state_array = Array('d', Dex3_Num_Motors, lock=True)
-        self.left_q_target  = np.full(Dex3_Num_Motors, 0)
+        self.left_q_target = np.full(Dex3_Num_Motors, 0)
         self.right_q_target = np.full(Dex3_Num_Motors, 0)
         q = 0.0
         dq = 0.0
@@ -554,9 +552,8 @@ class Runner_online_real_dexhand(Runner_online_real):
             time.sleep(0.01)
             print("[Dex3_1_Controller] Waiting to subscribe dds...")
 
-
     def send_cmd(self, cmd: Union[LowCmdGo, LowCmdHG]):
-        if abs(self.tau_record).max() > 100 or usb_right.damping_signal: # abs(self.tau_record).max() > 100 or
+        if abs(self.tau_record).max() > 100 or usb_right.damping_signal:  # abs(self.tau_record).max() > 100 or
             print("large tau: ", np.arange(29)[abs(self.tau_record) > 100])
             create_damping_cmd(self.low_cmd)
             cmd = self.low_cmd
@@ -564,6 +561,7 @@ class Runner_online_real_dexhand(Runner_online_real):
         self.lowcmd_publisher_.Write(cmd)
 
     class _RIS_Mode:
+
         def __init__(self, id=0, status=0x01, timeout=0):
             self.motor_mode = 0
             self.id = id & 0x0F  # 4 bits for id
@@ -623,7 +621,6 @@ class Runner_online_real_dexhand(Runner_online_real):
         else:
             self.right_q_target = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-
         action_data = np.concatenate((self.left_q_target, self.right_q_target))
         if dual_hand_state_array and dual_hand_action_array:
             with dual_hand_data_lock:
@@ -647,13 +644,8 @@ class Runner_online_real_dexhand(Runner_online_real):
         else:
             cmd_raw = None
 
-        self.target_dof_pos = self.squat_controller.run(
-            cmd_raw,
-            gravity_orientation,
-            omega,
-            qj_obs,
-            dqj_obs,
-            target_dof_pos)
+        self.target_dof_pos = self.squat_controller.run(cmd_raw, gravity_orientation, omega, qj_obs, dqj_obs,
+                                                        target_dof_pos)
 
         self.transition_squat()
         self.pd_control(self.squat_controller, self.target_dof_pos)
@@ -673,7 +665,6 @@ class Runner_online_real_dexhand(Runner_online_real):
         # print('squat hand fps: ', (1 / (current_control_timestamp - self.last_control_timestamp)), 'Hz')
         self.last_control_timestamp = current_control_timestamp
 
-
         self.ctrl_dual_hand(self.left_q_target, self.right_q_target)
         self.send_cmd(self.low_cmd)
         self.counter += 1
@@ -682,7 +673,10 @@ class Runner_online_real_dexhand(Runner_online_real):
 
 import mujoco.viewer
 import mujoco
+
+
 class Runner_handle_mujoco(Runner):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -718,7 +712,8 @@ class Runner_handle_mujoco(Runner):
                     "ang_vel": self.ang_vel,  # np.float32, shape = (3,)
                 },
                 "squat_cmd": self.squat_controller.squat_cmd if hasattr(self.config, "squat_config") else -1,
-                "loco_cmd": self.loco_controller.loco_cmd if hasattr(self.config, 'loco_config') else -1,  # np.float32, shape = (3,)
+                "loco_cmd": self.loco_controller.loco_cmd
+                            if hasattr(self.config, 'loco_config') else -1,  # np.float32, shape = (3,)
                 "target_dof_pos": self.target_dof_pos,  # np.float32, shape = (num_actions,)
                 "tau": self.tau_record,  # np.float32, shape = (num_actions,)
             }
@@ -763,15 +758,13 @@ class Runner_handle_mujoco(Runner):
 
             if manual:
                 cmd_raw = self.squat_controller.config.cmd_debug.copy()
-                cmd_raw[0] = usb_left.lx    # height
+                cmd_raw[0] = usb_left.lx  # height
                 cmd_raw[1] = usb_right.rx
                 # print(cmd_raw)
             else:
                 cmd_raw = None
-            self.target_dof_pos = self.squat_controller.run(
-                cmd_raw, gravity_orientation,
-                self.ang_vel, self.qj, self.dqj,
-                target_dof_pos)
+            self.target_dof_pos = self.squat_controller.run(cmd_raw, gravity_orientation, self.ang_vel, self.qj,
+                                                            self.dqj, target_dof_pos)
             self.transition_squat()
         tau = self.pd_control(self.squat_controller, self.target_dof_pos)
         self.d.ctrl[:] = tau
@@ -804,10 +797,8 @@ class Runner_handle_mujoco(Runner):
             else:
                 cmd_raw = None
             if not self.transition_loco():
-                self.target_dof_pos = self.loco_controller.run(
-                    cmd_raw, gravity_orientation,
-                    self.ang_vel, self.qj, self.dqj,
-                    target_dof_pos)
+                self.target_dof_pos = self.loco_controller.run(cmd_raw, gravity_orientation, self.ang_vel, self.qj,
+                                                               self.dqj, target_dof_pos)
 
         tau = self.pd_control(self.loco_controller, self.target_dof_pos)
         # breakpoint()
@@ -826,8 +817,12 @@ class Runner_handle_mujoco(Runner):
         self.counter += 1
         self.post_loco()
 
+
 from mujoco import Renderer
+
+
 class Runner_handle_mujoco_vision(Runner_handle_mujoco):
+
     def __init__(self, config: Config, args) -> None:
         self.config = config
         super().__init__(config, args)
@@ -853,4 +848,3 @@ class Runner_handle_mujoco_vision(Runner_handle_mujoco):
         self.renderer.update_scene(self.d, camera=self.right_camera_id)
         right_image = self.renderer.render()
         self.render_image = np.concatenate((left_image, right_image), axis=1)
-

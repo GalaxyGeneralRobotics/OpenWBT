@@ -1,4 +1,5 @@
 class LPFilter:
+
     def __init__(self, alpha):
         self.alpha = alpha
         self.y = None

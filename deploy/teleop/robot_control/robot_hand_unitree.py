@@ -1,10 +1,10 @@
 # for dex3-1
-from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber, ChannelFactoryInitialize # dds
-from unitree_sdk2py.idl.unitree_hg.msg.dds_ import HandCmd_, HandState_                               # idl
+from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber, ChannelFactoryInitialize  # dds
+from unitree_sdk2py.idl.unitree_hg.msg.dds_ import HandCmd_, HandState_  # idl
 from unitree_sdk2py.idl.default import unitree_hg_msg_dds__HandCmd_
 # for gripper
-from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber, ChannelFactoryInitialize # dds
-from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_                           # idl
+from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber, ChannelFactoryInitialize  # dds
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_  # idl
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__MotorCmd_
 
 import numpy as np
@@ -21,8 +21,7 @@ from teleop.robot_control.hand_retargeting import HandRetargeting, HandType
 from teleop.utils.weighted_moving_filter import WeightedMovingFilter
 from teleop.handle_controller import UsbHandle
 
-
-unitree_tip_indices = [4, 9, 14] # [thumb, index, middle] in OpenXR
+unitree_tip_indices = [4, 9, 14]  # [thumb, index, middle] in OpenXR
 Dex3_Num_Motors = 7
 kTopicDex3LeftCommand = "rt/dex3/left/cmd"
 kTopicDex3RightCommand = "rt/dex3/right/cmd"
@@ -31,7 +30,14 @@ kTopicDex3RightState = "rt/dex3/right/state"
 
 
 class Dex3_1_Controller:
-    def __init__(self, left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array, dual_hand_data_lock = None, fps = 100.0, Unit_Test = False):
+
+    def __init__(self,
+                 left_hand_grasp_state,
+                 right_hand_grasp_state,
+                 dual_hand_state_array,
+                 dual_hand_data_lock=None,
+                 fps=100.0,
+                 Unit_Test=False):
         """
         [note] A *_array type parameter requires using a multiprocessing Array, because it needs to be passed to the internal child process
 
@@ -71,7 +77,7 @@ class Dex3_1_Controller:
         self.RightHandState_subscriber.Init()
 
         # Shared Arrays for hand states
-        self.left_hand_state_array  = Array('d', Dex3_Num_Motors, lock=True)  
+        self.left_hand_state_array = Array('d', Dex3_Num_Motors, lock=True)
         self.right_hand_state_array = Array('d', Dex3_Num_Motors, lock=True)
 
         # initialize subscribe thread
@@ -85,7 +91,9 @@ class Dex3_1_Controller:
             time.sleep(0.01)
             print("[Dex3_1_Controller] Waiting to subscribe dds...")
 
-        hand_control_process = Process(target=self.control_process, args=(left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array, dual_hand_data_lock))
+        hand_control_process = Process(target=self.control_process,
+                                       args=(left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array,
+                                             dual_hand_data_lock))
         hand_control_process.daemon = True
         hand_control_process.start()
 
@@ -93,7 +101,7 @@ class Dex3_1_Controller:
 
     def _subscribe_hand_state(self):
         while True:
-            left_hand_msg  = self.LeftHandState_subscriber.Read()
+            left_hand_msg = self.LeftHandState_subscriber.Read()
             right_hand_msg = self.RightHandState_subscriber.Read()
             if left_hand_msg is not None and right_hand_msg is not None:
                 # Update left hand state
@@ -103,8 +111,9 @@ class Dex3_1_Controller:
                 for idx, id in enumerate(Dex3_1_Right_JointIndex):
                     self.right_hand_state_array[idx] = right_hand_msg.motor_state[id].q
             time.sleep(0.002)
-    
+
     class _RIS_Mode:
+
         def __init__(self, id=0, status=0x01, timeout=0):
             self.motor_mode = 0
             self.id = id & 0x0F  # 4 bits for id
@@ -127,11 +136,15 @@ class Dex3_1_Controller:
         self.LeftHandCmb_publisher.Write(self.left_msg)
         self.RightHandCmb_publisher.Write(self.right_msg)
         # print("hand ctrl publish ok.")
-    
-    def control_process(self, left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array, dual_hand_data_lock = None):
+
+    def control_process(self,
+                        left_hand_grasp_state,
+                        right_hand_grasp_state,
+                        dual_hand_state_array,
+                        dual_hand_data_lock=None):
         self.running = True
 
-        left_q_target  = np.full(Dex3_Num_Motors, 0)
+        left_q_target = np.full(Dex3_Num_Motors, 0)
         right_q_target = np.full(Dex3_Num_Motors, 0)
 
         q = 0.0
@@ -141,44 +154,44 @@ class Dex3_1_Controller:
         kd = 0.2
 
         # initialize dex3-1's left hand cmd msg
-        self.left_msg  = unitree_hg_msg_dds__HandCmd_()
+        self.left_msg = unitree_hg_msg_dds__HandCmd_()
         for id in Dex3_1_Left_JointIndex:
-            ris_mode = self._RIS_Mode(id = id, status = 0x01)
+            ris_mode = self._RIS_Mode(id=id, status=0x01)
             motor_mode = ris_mode._mode_to_uint8()
             self.left_msg.motor_cmd[id].mode = motor_mode
-            self.left_msg.motor_cmd[id].q    = q
-            self.left_msg.motor_cmd[id].dq   = dq
-            self.left_msg.motor_cmd[id].tau  = tau
-            self.left_msg.motor_cmd[id].kp   = kp
-            self.left_msg.motor_cmd[id].kd   = kd
+            self.left_msg.motor_cmd[id].q = q
+            self.left_msg.motor_cmd[id].dq = dq
+            self.left_msg.motor_cmd[id].tau = tau
+            self.left_msg.motor_cmd[id].kp = kp
+            self.left_msg.motor_cmd[id].kd = kd
 
         # initialize dex3-1's right hand cmd msg
         self.right_msg = unitree_hg_msg_dds__HandCmd_()
         for id in Dex3_1_Right_JointIndex:
-            ris_mode = self._RIS_Mode(id = id, status = 0x01)
+            ris_mode = self._RIS_Mode(id=id, status=0x01)
             motor_mode = ris_mode._mode_to_uint8()
-            self.right_msg.motor_cmd[id].mode = motor_mode  
-            self.right_msg.motor_cmd[id].q    = q
-            self.right_msg.motor_cmd[id].dq   = dq
-            self.right_msg.motor_cmd[id].tau  = tau
-            self.right_msg.motor_cmd[id].kp   = kp
-            self.right_msg.motor_cmd[id].kd   = kd  
+            self.right_msg.motor_cmd[id].mode = motor_mode
+            self.right_msg.motor_cmd[id].q = q
+            self.right_msg.motor_cmd[id].dq = dq
+            self.right_msg.motor_cmd[id].tau = tau
+            self.right_msg.motor_cmd[id].kp = kp
+            self.right_msg.motor_cmd[id].kd = kd
 
         try:
             while self.running:
                 start_time = time.time()
 
                 if left_hand_grasp_state == True:
-                    left_q_target = np.array([0.0, 0.0, np.pi/2, np.pi/2, np.pi/2, np.pi/2, np.pi/2])
+                    left_q_target = np.array([0.0, 0.0, np.pi / 2, np.pi / 2, np.pi / 2, np.pi / 2, np.pi / 2])
                 else:
                     left_q_target = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
                 if right_hand_grasp_state == True:
-                    right_q_target = np.array([0.0, 0.0, np.pi/2, np.pi/2, np.pi/2, np.pi/2, np.pi/2])
+                    right_q_target = np.array([0.0, 0.0, np.pi / 2, np.pi / 2, np.pi / 2, np.pi / 2, np.pi / 2])
                 else:
                     right_q_target = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-                # get dual hand action 
+                # get dual hand action
                 if dual_hand_state_array:
                     with dual_hand_data_lock:
                         dual_hand_state_array[:] = np.concatenate((left_q_target, right_q_target))
@@ -191,6 +204,7 @@ class Dex3_1_Controller:
         finally:
             print("Dex3_1_Controller has been closed.")
 
+
 class Dex3_1_Left_JointIndex(IntEnum):
     kLeftHandThumb0 = 0
     kLeftHandThumb1 = 1
@@ -199,6 +213,7 @@ class Dex3_1_Left_JointIndex(IntEnum):
     kLeftHandMiddle1 = 4
     kLeftHandIndex0 = 5
     kLeftHandIndex1 = 6
+
 
 class Dex3_1_Right_JointIndex(IntEnum):
     kRightHandThumb0 = 0
@@ -258,8 +273,9 @@ if __name__ == "__main__":
         dual_hand_data_lock = Lock()
         left_hand_grasp_state = False
         right_hand_grasp_state = False
-        dual_hand_state_array = Array('d', 14, lock = False)
-        hand_ctrl = Dex3_1_Controller(left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array, dual_hand_data_lock)
+        dual_hand_state_array = Array('d', 14, lock=False)
+        hand_ctrl = Dex3_1_Controller(left_hand_grasp_state, right_hand_grasp_state, dual_hand_state_array,
+                                      dual_hand_data_lock)
 
     user_input = input("Please enter the start signal (enter 'r' to start the subsequent program):\n")
     if user_input.lower() == 'r':

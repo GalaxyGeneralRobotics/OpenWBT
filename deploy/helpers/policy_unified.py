@@ -19,12 +19,15 @@ class TaskDict(TypedDict):
     gait_indices: np.ndarray
     clock_inputs: np.ndarray
 
+
 class OdomInfo(TypedDict):
     root_pos: np.ndarray
     root_quat: np.ndarray
-    
+
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
+
 
 def load_policy(policy_path):
     # load policy
@@ -38,20 +41,18 @@ def load_policy(policy_path):
         raise NotImplementedError
     return policy_type, policy
 
+
 class SquatLowLevelPolicy:
+
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.policy_type, self.policy_session = load_policy(cfg.policy_path)
 
         # buffer
-        self._last_action = np.zeros(
-            self.cfg.num_actions, dtype=np.float32
-        )
-        self.hidden_states=np.zeros([1,1,256], dtype=np.float32)
+        self._last_action = np.zeros(self.cfg.num_actions, dtype=np.float32)
+        self.hidden_states = np.zeros([1, 1, 256], dtype=np.float32)
 
-    def inference(
-        self, cmd, gravity_orientation, omega, qj, dqj, upper_action=None
-    ):
+    def inference(self, cmd, gravity_orientation, omega, qj, dqj, upper_action=None):
         obs = self.compute_observation(cmd, gravity_orientation, omega, qj, dqj)
         if self.policy_type == "onnx":
             actions, self.hidden_states = self.policy_session.run(
@@ -74,9 +75,7 @@ class SquatLowLevelPolicy:
         # print(high_cmd[2:])
         return obs, action, self.action_to_target_dof_pos(action)
 
-    def compute_observation(
-        self, cmd, gravity_orientation, omega, qj, dqj
-    ):
+    def compute_observation(self, cmd, gravity_orientation, omega, qj, dqj):
         default_angles_obs = self.cfg.default_angles[self.cfg.dof_idx]
         obs_cmd = cmd * self.cfg.cmd_scale
         obs_omega = omega * self.cfg.ang_vel_scale
@@ -97,17 +96,17 @@ class SquatLowLevelPolicy:
         default_angles_action = self.cfg.default_angles[self.cfg.action_idx]
         target_dof_pos = action * action_scale + default_angles_action
         return target_dof_pos
-    
+
+
 class LocoLowLevelPolicy:
+
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.policy_type, self.policy_session = load_policy(cfg.policy_path)
 
         # buffer
-        self._last_action = np.zeros(
-            self.cfg.num_actions, dtype=np.float32
-        )
-        self.hidden_states=np.zeros([1,1,256], dtype=np.float32)
+        self._last_action = np.zeros(self.cfg.num_actions, dtype=np.float32)
+        self.hidden_states = np.zeros([1, 1, 256], dtype=np.float32)
 
         self.gait_parameters = cfg.gait_parameters
         self.gait_planner = BipedalGaitPlanner(
@@ -117,9 +116,7 @@ class LocoLowLevelPolicy:
             phase_offset=self.gait_parameters["phase_offset"],
         )
 
-    def inference(
-        self, cmd, gravity_orientation, omega, qj, dqj, upper_action=None
-    ):
+    def inference(self, cmd, gravity_orientation, omega, qj, dqj, upper_action=None):
         # breakpoint()
         obs = self.compute_observation(cmd, gravity_orientation, omega, qj, dqj)
         if self.policy_type == "onnx":
@@ -144,9 +141,7 @@ class LocoLowLevelPolicy:
         # print(high_cmd[2:])
         return obs, action, self.action_to_target_dof_pos(action)
 
-    def compute_observation(
-        self, cmd, gravity_orientation, omega, qj, dqj
-    ):
+    def compute_observation(self, cmd, gravity_orientation, omega, qj, dqj):
         default_angles_obs = self.cfg.default_angles[self.cfg.dof_idx]
         obs_cmd = cmd * self.cfg.cmd_scale
         obs_omega = omega * self.cfg.ang_vel_scale

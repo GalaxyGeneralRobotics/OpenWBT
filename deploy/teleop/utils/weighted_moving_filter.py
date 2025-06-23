@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 
 class WeightedMovingFilter:
-    def __init__(self, weights, data_size = 14):
+
+    def __init__(self, weights, data_size=14):
         self._window_size = len(weights)
         self._weights = np.array(weights)
         assert np.isclose(np.sum(self._weights), 1.0), "[WeightedMovingFilter] the sum of weights list must be 1.0!"
@@ -19,7 +20,7 @@ class WeightedMovingFilter:
         temp_filtered_data = np.zeros(self._data_size)
         for i in range(self._data_size):
             temp_filtered_data[i] = np.convolve(data_array[:, i], self._weights, mode='valid')[-1]
-        
+
         return temp_filtered_data
 
     def add_data(self, new_data):
@@ -27,7 +28,7 @@ class WeightedMovingFilter:
 
         if len(self._data_queue) > 0 and np.array_equal(new_data, self._data_queue[-1]):
             return  # skip duplicate data
-        
+
         if len(self._data_queue) >= self._window_size:
             self._data_queue.pop(0)
 
@@ -42,10 +43,11 @@ class WeightedMovingFilter:
 def visualize_filter_comparison(filter_params, steps):
     import time
     t = np.linspace(0, 4 * np.pi, steps)
-    original_data = np.array([np.sin(t + i) + np.random.normal(0, 0.2, len(t)) for i in range(35)]).T  # sin wave with noise, shape is [len(t), 35]
+    original_data = np.array([np.sin(t + i) + np.random.normal(0, 0.2, len(t)) for i in range(35)
+                             ]).T  # sin wave with noise, shape is [len(t), 35]
 
     plt.figure(figsize=(14, 10))
-    
+
     for idx, weights in enumerate(filter_params):
         filter = WeightedMovingFilter(weights, 14)
         data_2b_filtered = original_data.copy()
@@ -54,7 +56,7 @@ def visualize_filter_comparison(filter_params, steps):
         time1 = time.time()
 
         for i in range(steps):
-            filter.add_data(data_2b_filtered[i][13:27])            # step i, columns 13 to 26 (total:14)
+            filter.add_data(data_2b_filtered[i][13:27])  # step i, columns 13 to 26 (total:14)
             data_2b_filtered[i][13:27] = filter.filtered_data
             filtered_data.append(data_2b_filtered[i])
 
@@ -87,10 +89,10 @@ def visualize_filter_comparison(filter_params, steps):
 
 if __name__ == "__main__":
     # windows_size and weights
-    filter_params = [ 
+    filter_params = [
         (np.array([0.7, 0.2, 0.1])),
         (np.array([0.5, 0.3, 0.2])),
         (np.array([0.4, 0.3, 0.2, 0.1])),
     ]
 
-    visualize_filter_comparison(filter_params, steps = 100)
+    visualize_filter_comparison(filter_params, steps=100)

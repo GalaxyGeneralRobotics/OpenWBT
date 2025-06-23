@@ -22,12 +22,8 @@ _logger = logging.getLogger(__name__)
 def _array_eq(arr1, arr2):
     if arr1 is None and arr2 is None:
         return True
-    return (
-        isinstance(arr1, np.ndarray)
-        and isinstance(arr2, np.ndarray)
-        and arr1.shape == arr2.shape
-        and (arr1 == arr2).all()
-    )
+    return (isinstance(arr1, np.ndarray) and isinstance(arr2, np.ndarray) and arr1.shape == arr2.shape and
+            (arr1 == arr2).all())
 
 
 @dataclass(eq=False)
@@ -38,11 +34,9 @@ class TransmissionJoint:
     def __eq__(self, other):
         if not isinstance(other, TransmissionJoint):
             return NotImplemented
-        return (
-            self.name == other.name
-            and all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces)
-            and all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces)
-        )
+        return (self.name == other.name and
+                all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces) and
+                all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces))
 
 
 @dataclass(eq=False)
@@ -55,12 +49,9 @@ class Actuator:
     def __eq__(self, other):
         if not isinstance(other, Actuator):
             return NotImplemented
-        return (
-            self.name == other.name
-            and self.mechanical_reduction == other.mechanical_reduction
-            and all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces)
-            and all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces)
-        )
+        return (self.name == other.name and self.mechanical_reduction == other.mechanical_reduction and
+                all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces) and
+                all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces))
 
 
 @dataclass(eq=False)
@@ -73,14 +64,11 @@ class Transmission:
     def __eq__(self, other):
         if not isinstance(other, Transmission):
             return NotImplemented
-        return (
-            self.name == other.name
-            and self.type == other.type
-            and all(self_joint in other.joints for self_joint in self.joints)
-            and all(other_joint in self.joints for other_joint in other.joints)
-            and all(self_actuator in other.actuators for self_actuator in self.actuators)
-            and all(other_actuator in self.actuators for other_actuator in other.actuators)
-        )
+        return (self.name == other.name and self.type == other.type and
+                all(self_joint in other.joints for self_joint in self.joints) and
+                all(other_joint in self.joints for other_joint in other.joints) and
+                all(self_actuator in other.actuators for self_actuator in self.actuators) and
+                all(other_actuator in self.actuators for other_actuator in other.actuators))
 
 
 @dataclass
@@ -183,12 +171,8 @@ class Visual:
     def __eq__(self, other):
         if not isinstance(other, Visual):
             return NotImplemented
-        return (
-            self.name == other.name
-            and _array_eq(self.origin, other.origin)
-            and self.geometry == other.geometry
-            and self.material == other.material
-        )
+        return (self.name == other.name and _array_eq(self.origin, other.origin) and self.geometry == other.geometry and
+                self.material == other.material)
 
 
 @dataclass(eq=False)
@@ -212,9 +196,8 @@ class Inertial:
     def __eq__(self, other):
         if not isinstance(other, Inertial):
             return NotImplemented
-        return (
-            _array_eq(self.origin, other.origin) and self.mass == other.mass and _array_eq(self.inertia, other.inertia)
-        )
+        return (_array_eq(self.origin, other.origin) and self.mass == other.mass and
+                _array_eq(self.inertia, other.inertia))
 
 
 @dataclass(eq=False)
@@ -227,14 +210,11 @@ class Link:
     def __eq__(self, other):
         if not isinstance(other, Link):
             return NotImplemented
-        return (
-            self.name == other.name
-            and self.inertial == other.inertial
-            and all(self_visual in other.visuals for self_visual in self.visuals)
-            and all(other_visual in self.visuals for other_visual in other.visuals)
-            and all(self_collision in other.collisions for self_collision in self.collisions)
-            and all(other_collision in self.collisions for other_collision in other.collisions)
-        )
+        return (self.name == other.name and self.inertial == other.inertial and
+                all(self_visual in other.visuals for self_visual in self.visuals) and
+                all(other_visual in self.visuals for other_visual in other.visuals) and
+                all(self_collision in other.collisions for self_collision in self.collisions) and
+                all(other_collision in self.collisions for other_collision in other.collisions))
 
 
 @dataclass
@@ -268,19 +248,11 @@ class Joint:
     def __eq__(self, other):
         if not isinstance(other, Joint):
             return NotImplemented
-        return (
-            self.name == other.name
-            and self.type == other.type
-            and self.parent == other.parent
-            and self.child == other.child
-            and _array_eq(self.origin, other.origin)
-            and _array_eq(self.axis, other.axis)
-            and self.dynamics == other.dynamics
-            and self.limit == other.limit
-            and self.mimic == other.mimic
-            and self.calibration == other.calibration
-            and self.safety_controller == other.safety_controller
-        )
+        return (self.name == other.name and self.type == other.type and self.parent == other.parent and
+                self.child == other.child and _array_eq(self.origin, other.origin) and
+                _array_eq(self.axis, other.axis) and self.dynamics == other.dynamics and self.limit == other.limit and
+                self.mimic == other.mimic and self.calibration == other.calibration and
+                self.safety_controller == other.safety_controller)
 
 
 @dataclass(eq=False)
@@ -295,19 +267,16 @@ class Robot:
     def __eq__(self, other):
         if not isinstance(other, Robot):
             return NotImplemented
-        return (
-            self.name == other.name
-            and all(self_link in other.links for self_link in self.links)
-            and all(other_link in self.links for other_link in other.links)
-            and all(self_joint in other.joints for self_joint in self.joints)
-            and all(other_joint in self.joints for other_joint in other.joints)
-            and all(self_material in other.materials for self_material in self.materials)
-            and all(other_material in self.materials for other_material in other.materials)
-            and all(self_transmission in other.transmission for self_transmission in self.transmission)
-            and all(other_transmission in self.transmission for other_transmission in other.transmission)
-            and all(self_gazebo in other.gazebo for self_gazebo in self.gazebo)
-            and all(other_gazebo in self.gazebo for other_gazebo in other.gazebo)
-        )
+        return (self.name == other.name and all(self_link in other.links for self_link in self.links) and
+                all(other_link in self.links for other_link in other.links) and
+                all(self_joint in other.joints for self_joint in self.joints) and
+                all(other_joint in self.joints for other_joint in other.joints) and
+                all(self_material in other.materials for self_material in self.materials) and
+                all(other_material in self.materials for other_material in other.materials) and
+                all(self_transmission in other.transmission for self_transmission in self.transmission) and
+                all(other_transmission in self.transmission for other_transmission in other.transmission) and
+                all(self_gazebo in other.gazebo for self_gazebo in self.gazebo) and
+                all(other_gazebo in self.gazebo for other_gazebo in other.gazebo))
 
 
 class URDFError(Exception):
@@ -467,7 +436,7 @@ def filename_handler_absolute2relative(fname, dir):
     """
     # TODO: that's not right
     if fname.startswith(dir):
-        return fname[len(dir) :]
+        return fname[len(dir):]
     return fname
 
 
@@ -500,8 +469,7 @@ def _create_filename_handlers_to_urdf_file_recursive(urdf_fname):
             filename_handler_relative_to_urdf_file_recursive,
             urdf_fname=urdf_fname,
             level=i,
-        )
-        for i in range(len(os.path.normpath(urdf_fname).split(os.path.sep)))
+        ) for i in range(len(os.path.normpath(urdf_fname).split(os.path.sep)))
     ]
 
 
@@ -539,8 +507,7 @@ def filename_handler_magic(fname, dir):
         filename_handlers=[
             partial(filename_handler_relative, dir=dir),
             filename_handler_ignore_directive,
-        ]
-        + _create_filename_handlers_to_urdf_file_recursive(urdf_fname=dir),
+        ] + _create_filename_handlers_to_urdf_file_recursive(urdf_fname=dir),
     )
 
 
@@ -557,6 +524,7 @@ def validation_handler_strict(errors):
 
 
 class URDF:
+
     def __init__(
         self,
         robot: Robot = None,
@@ -947,9 +915,8 @@ class URDF:
         etree.strip_tags(xml_root, etree.Comment)
         etree.cleanup_namespaces(xml_root)
 
-        return URDF(
-            robot=URDF._parse_robot(xml_element=xml_root, add_dummy_free_joints=add_dummy_free_joints), **kwargs
-        )
+        return URDF(robot=URDF._parse_robot(xml_element=xml_root, add_dummy_free_joints=add_dummy_free_joints),
+                    **kwargs)
 
     def contains(self, key, value, element=None) -> bool:
         """Checks recursively whether the URDF tree contains the provided key-value pair.
@@ -1125,9 +1092,8 @@ class URDF:
         elif geometry.sphere is not None:
             new_s = trimesh.primitives.Sphere(radius=geometry.sphere.radius).scene()
         elif geometry.cylinder is not None:
-            new_s = trimesh.primitives.Cylinder(
-                radius=geometry.cylinder.radius, height=geometry.cylinder.length
-            ).scene()
+            new_s = trimesh.primitives.Cylinder(radius=geometry.cylinder.radius,
+                                                height=geometry.cylinder.length).scene()
         elif geometry.mesh is not None and load_file:
             new_filename = self._filename_handler(fname=geometry.mesh.filename)
 
@@ -1326,12 +1292,10 @@ class URDF:
                 root_link_name=root_link.name,
             )
 
-            result.append(
-                (
-                    self._scene.graph.get(root_link.name)[0],
-                    URDF(robot=new_robot, **kwargs),
-                )
-            )
+            result.append((
+                self._scene.graph.get(root_link.name)[0],
+                URDF(robot=new_robot, **kwargs),
+            ))
 
             # remove links and joints from root robot
             for j in new_robot.joints:
@@ -1341,9 +1305,8 @@ class URDF:
 
             # remove joint that connects root urdf to root_link
             if root_link.name in [j.child for j in root_urdf.robot.joints]:
-                root_urdf.robot.joints.remove(
-                    root_urdf.robot.joints[[j.child for j in root_urdf.robot.joints].index(root_link.name)]
-                )
+                root_urdf.robot.joints.remove(root_urdf.robot.joints[[j.child for j in root_urdf.robot.joints
+                                                                     ].index(root_link.name)])
 
         result.insert(0, (np.eye(4), URDF(robot=root_urdf.robot, **kwargs)))
 
@@ -1550,7 +1513,10 @@ class URDF:
         etree.SubElement(
             xml_parent,
             "cylinder",
-            attrib={"radius": str(cylinder.radius), "length": str(cylinder.length)},
+            attrib={
+                "radius": str(cylinder.radius),
+                "length": str(cylinder.length)
+            },
         )
 
     def _parse_sphere(xml_element):
@@ -1609,29 +1575,21 @@ class URDF:
         if geometry is None:
             self._errors.append(URDFIncompleteError("<geometry> is missing."))
 
-        num_nones = sum(
-            [
-                x is not None
-                for x in [
-                    geometry.box,
-                    geometry.cylinder,
-                    geometry.sphere,
-                    geometry.mesh,
-                ]
-            ]
-        )
+        num_nones = sum([x is not None for x in [
+            geometry.box,
+            geometry.cylinder,
+            geometry.sphere,
+            geometry.mesh,
+        ]])
         if num_nones < 1:
             self._errors.append(
                 URDFIncompleteError(
-                    "One of <sphere>, <cylinder>, <box>, <mesh> needs to be defined as a child of <geometry>."
-                )
-            )
+                    "One of <sphere>, <cylinder>, <box>, <mesh> needs to be defined as a child of <geometry>."))
         elif num_nones > 1:
             self._errors.append(
                 URDFError(
                     "Too many of <sphere>, <cylinder>, <box>, <mesh> defined as a child of <geometry>. Only one allowed."
-                )
-            )
+                ))
 
     def _write_geometry(self, xml_parent, geometry):
         if geometry is None:
@@ -2028,7 +1986,8 @@ class URDF:
         ]
         self._validate_required_attribute(
             attribute=joint.type,
-            error_msg=f"The <joint> tag misses a 'type' attribute or value is not part of allowed values [{', '.join(allowed_types)}].",
+            error_msg=
+            f"The <joint> tag misses a 'type' attribute or value is not part of allowed values [{', '.join(allowed_types)}].",
             allowed_values=allowed_types,
         )
 
@@ -2206,9 +2165,9 @@ def _add_dummy_joints(robot: Robot, root_link_name: str):
     joints = []
 
     for i in range(6):
-        inertial = Inertial(
-            mass=0.01, inertia=np.array([[1e-4, 0, 0], [0, 1e-4, 0], [0, 0, 1e-4]]), origin=np.identity(4)
-        )
+        inertial = Inertial(mass=0.01,
+                            inertia=np.array([[1e-4, 0, 0], [0, 1e-4, 0], [0, 0, 1e-4]]),
+                            origin=np.identity(4))
         link = Link(name=link_name[i], inertial=inertial)
         links.append(link)
 
@@ -2232,6 +2191,5 @@ def _add_dummy_joints(robot: Robot, root_link_name: str):
     robot.links = links + robot.links
 
 
-DUMMY_JOINT_NAMES = [f"dummy_{name}_translation_joint" for name in "xyz"] + [
-    f"dummy_{name}_rotation_joint" for name in "xyz"
-]
+DUMMY_JOINT_NAMES = [f"dummy_{name}_translation_joint" for name in "xyz"
+                    ] + [f"dummy_{name}_rotation_joint" for name in "xyz"]

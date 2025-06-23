@@ -149,9 +149,9 @@ class RetargetingConfig:
         import tempfile
 
         # Process the URDF with yourdfpy to better find file path
-        robot_urdf = urdf.URDF.load(
-            self.urdf_path, add_dummy_free_joints=self.add_dummy_free_joint, build_scene_graph=False
-        )
+        robot_urdf = urdf.URDF.load(self.urdf_path,
+                                    add_dummy_free_joints=self.add_dummy_free_joint,
+                                    build_scene_graph=False)
         urdf_name = self.urdf_path.split(os.path.sep)[-1]
         temp_dir = tempfile.mkdtemp(prefix="dex_retargeting-")
         temp_path = f"{temp_dir}/{urdf_name}"

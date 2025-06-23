@@ -3,6 +3,7 @@ import threading
 import time
 from typing import Callable, Dict, Optional
 
+
 class UsbHandle:
     KEY_1 = 1
     KEY_2 = 2
@@ -16,10 +17,7 @@ class UsbHandle:
     KEY_9 = 10
 
     KEY_STATUS = ["KEY_DOWN", "KEY_UP", "KEY_LONG", "KEY_CLICK"]
-    KEY_NAMES = [
-        "KEY_1", "KEY_2", "KEY_3", "KEY_4", "KEY_5",
-        "KEY_6", "KEY_PULLEY", "KEY_7", "KEY_8", "KEY_9"
-    ]
+    KEY_NAMES = ["KEY_1", "KEY_2", "KEY_3", "KEY_4", "KEY_5", "KEY_6", "KEY_PULLEY", "KEY_7", "KEY_8", "KEY_9"]
 
     def __init__(self, port: str):
         self.serial = serial.Serial()
@@ -43,7 +41,6 @@ class UsbHandle:
         self.ly = 0.0
         self.rx = 0.0
         self.ry = 0.0
-
 
         try:
             self.serial.open()
@@ -83,22 +80,22 @@ class UsbHandle:
             # Find frame start (0xDE 0xED)
             start = -1
             for i in range(len(self.buffer) - 9):
-                if self.buffer[i] == 0xDE and self.buffer[i+1] == 0xED:
+                if self.buffer[i] == 0xDE and self.buffer[i + 1] == 0xED:
                     # Check frame end (0xEA 0xAE)
-                    if self.buffer[i+8] == 0xEA and self.buffer[i+9] == 0xAE:
+                    if self.buffer[i + 8] == 0xEA and self.buffer[i + 9] == 0xAE:
                         start = i
                         break
                     else:
                         continue
-            
+
             if start == -1:
                 # Remove invalid data (keep last 9 bytes)
                 if len(self.buffer) > 9:
                     self.buffer = self.buffer[-9:]
                 return
-            
+
             # Extract and parse frame
-            frame = self.buffer[start:start+10]
+            frame = self.buffer[start:start + 10]
             key_frame = {
                 'keyIdx': frame[2],
                 'value1': int.from_bytes(frame[4:6], byteorder='big', signed=True),
@@ -111,12 +108,12 @@ class UsbHandle:
                 self.callback(key_frame)
 
             # Remove processed data
-            self.buffer = self.buffer[start+10:]
+            self.buffer = self.buffer[start + 10:]
 
     def left_callback(self, frame: Dict):
         key_idx = frame['keyIdx']
         status = frame['value1'] - 1
-        
+
         if key_idx != self.KEY_PULLEY:
             idx = key_idx - 1
             # print(f"left {self.KEY_NAMES[idx]} -> {self.KEY_STATUS[status]}")
@@ -145,11 +142,10 @@ class UsbHandle:
             self.ly = (frame['value1'] - 1853) / 2500
             # print(f"left_pulley | value1={frame['value1']} value2={frame['value2']}")
 
-
     def right_callback(self, frame: Dict):
         key_idx = frame['keyIdx']
         status = frame['value1'] - 1
-        
+
         if key_idx != self.KEY_PULLEY:
             idx = key_idx - 1
             # print(f"right {self.KEY_NAMES[idx]} -> {self.KEY_STATUS[status]}")
@@ -173,8 +169,8 @@ class UsbHandle:
                 # print('Exit signal: ', self.exit_signal)
             # elif self.KEY_NAMES[idx] == "KEY_2" and self.KEY_STATUS[status] == "KEY_UP":
             #     self.damping_signal = False
-                # self.exit_signal = False
-                # print('Zero torque signal: ', self.damping_signal)
+            # self.exit_signal = False
+            # print('Zero torque signal: ', self.damping_signal)
 
             # 右A切换到squat mode
             elif self.KEY_NAMES[idx] == "KEY_1" and self.KEY_STATUS[status] == "KEY_DOWN":
@@ -194,10 +190,6 @@ class UsbHandle:
         else:
             self.rx = (1853 - frame['value2']) / 2500
             self.ry = (frame['value1'] - 1853) / 2500
-
-
-
-        
 
 
 # def main():

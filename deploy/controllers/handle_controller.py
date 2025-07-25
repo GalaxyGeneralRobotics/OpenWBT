@@ -190,34 +190,3 @@ class UsbHandle:
         else:
             self.rx = (1853 - frame['value2']) / 2500
             self.ry = (frame['value1'] - 1853) / 2500
-
-
-# def main():
-#     # Initialize USB devices
-#         try:
-#             usb_left = UsbHandle("/dev/ttyACM2")
-#             usb_right = UsbHandle("/dev/ttyACM3")
-#         except:
-#             return
-
-#         # Start receiving threads
-#         usb_left.start_receiving()
-#         usb_right.start_receiving()
-
-#         # # Register callbacks
-#         usb_left.register_callback(usb_left.left_callback)
-#         usb_right.register_callback(usb_right.right_callback)
-
-#         # Keep main thread alive
-#         try:
-#             while True:
-#                 time.sleep(0.5)
-#                 # print(usb_left.run_loco_signal)
-#                 # print('lin_vel_x = ', usb_left.lx)
-#                 # print('lin_vel_y = ', usb_left.ly)
-#         except KeyboardInterrupt:
-#             usb_left.stop_receiving()
-#             usb_right.stop_receiving()
-
-# if __name__ == "__main__":
-#     main()

@@ -9,6 +9,7 @@
 
 </div>
 
+> ⚠️ This project is based on a development-stage version of Isaac Sim, and APIs may change frequently.
 
 
 # Introduction
